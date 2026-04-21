@@ -97,7 +97,12 @@ router.post("/webhook", async (req, res) => {
     const payload: string = update.message.successful_payment.invoice_payload;
     const buyerId = String(update.message.from?.id ?? "");
 
-    const { rows: purchases } = await pool.query(
+    const { rows: purchases } = await pool.query( await pool.query(
+  `UPDATE users
+   SET balance = balance + $1
+   WHERE telegram_id = $2`,
+  [purchase.game_stars, buyerId]
+);
       `SELECT * FROM purchases WHERE telegram_payload = $1 AND status = 'pending' LIMIT 1`,
       [payload]
     );
