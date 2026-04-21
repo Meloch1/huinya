@@ -349,19 +349,42 @@ function AnimatedBalance({ balance }: { balance: number }) {
 
 /* ── Main game screen ───────────────────────────── */
 export default function Game() {
-  const [tab, setTab]             = useState<Tab>("games");
+  const [tab, setTab] = useState<Tab>("games");
   const [activeGame, setActiveGame] = useState<ActiveGame>("stream");
-  const { state, goLive, collect, reset, setBet, claimFreeReward, addCredits } = useGameState();
+  const { state, goLive, collect, reset, setBet, claimFreeReward, addCredits } =
+    useGameState();
+
   const myUserId = getTelegramUserId();
 
+  // 🔥 ЗАГРУЗКА БАЛАНСА ИЗ БЭКА
   useEffect(() => {
-    // Try URL search param first (?ref=REFERRER_ID) — set by bot handler
-    const urlRef = new URLSearchParams(window.location.search).get("ref") ?? "";
-    // Fallback: Telegram start_param for startapp deep links
-    const startParam: string = (window as any).Telegram?.WebApp?.initDataUnsafe?.start_param ?? "";
+    const userId =
+      (window as any)?.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+
+    if (!userId) return;
+
+    fetch(`/api/payments/balance/${userId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (typeof data.balance === "number") {
+          addCredits(data.balance);
+        }
+      })
+      .catch((err) => console.error("Balance sync error:", err));
+  }, []);
+
+  // 🔥 РЕФЕРАЛЫ (твой код оставляем, но чистим)
+  useEffect(() => {
+    const urlRef =
+      new URLSearchParams(window.location.search).get("ref") ?? "";
+
+    const startParam: string =
+      (window as any)?.Telegram?.WebApp?.initDataUnsafe?.start_param ?? "";
+
     const tgRef = startParam.startsWith("ref_") ? startParam.slice(4) : "";
 
     const referrerId = urlRef || tgRef;
+
     if (referrerId && referrerId !== myUserId) {
       registerReferral(referrerId, myUserId);
     }
