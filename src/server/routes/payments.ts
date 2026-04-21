@@ -72,10 +72,12 @@ router.post("/invoice", async (req, res) => {
   }
 
   await pool.query(
-    `INSERT INTO purchases (telegram_user_id, pack_id, game_stars, tg_stars, telegram_payload, status, claimed)
-     VALUES ($1, $2, $3, $4, $5, 'pending', 0)`,
-    [String(telegramUserId), resolvedPackId, pack.gameStars, pack.tgStars, payload]
-  );
+  `INSERT INTO users (telegram_id, balance)
+   VALUES ($1, $2)
+   ON CONFLICT (telegram_id)
+   DO UPDATE SET balance = users.balance + EXCLUDED.balance`,
+  [buyerId, purchase.game_stars]
+);
 
   res.json({ invoiceUrl: result.result });
 });
