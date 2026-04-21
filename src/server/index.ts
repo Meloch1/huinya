@@ -1,3 +1,4 @@
+import balanceRouter from "./routes/balance.js";
 import express from "express";
 import cors from "cors";
 import path from "path";
@@ -12,7 +13,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(cors());
 app.use(express.json());
-
+app.use("/api/balance", balanceRouter);
 app.get("/api/healthz", (_req, res) => res.json({ status: "ok" }));
 app.use("/api/payments", paymentsRouter);
 app.use("/api/referral", referralRouter);
