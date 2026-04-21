@@ -30,9 +30,9 @@ const port = Number(process.env.PORT ?? 8080);
 
 initDb()
   .then(() => {
-    app.listen(port, () => console.log(`Server running on port ${port}`));
-    setupBot();
-  })
+    app.listen(port, "0.0.0.0", () => {
+  console.log("Server running on port", port);
+});
   .catch((err) => {
     console.error("Failed to init DB:", err);
     process.exit(1);
