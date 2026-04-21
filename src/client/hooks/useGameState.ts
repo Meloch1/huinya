@@ -92,36 +92,42 @@ export function useGameState() {
 
   const crash = useCallback((bet: number, crashAt: number) => {
     stopAll();
-    setState((s) => {
-      const newBalance = s.profile.balance - bet;
-      const viewerChange = getViewerChange(crashAt, false);
-      const ratingChange = getRatingChange(crashAt, false);
-      const newViewers = Math.max(0, s.profile.viewers + viewerChange);
-      const newRating = Math.max(0, s.profile.rating + ratingChange);
-      const newGames = s.profile.gamesPlayed + 1;
-      let tasks = s.tasks.map((t) =>
-        t.id === "play10" && !t.completed
-          ? { ...t, current: t.current + 1, completed: t.current + 1 >= t.target }
-          : t
-      );
-      return {
-        ...s,
-        phase: "crashed",
-        profile: {
-          ...s.profile,
-          balance: Math.max(0, newBalance),
-          viewers: newViewers,
-          rating: newRating,
-          gamesPlayed: newGames,
-          rank: getRank(newRating),
-        },
-        currentMultiplier: crashAt,
-        tasks,
-        hypeMode: false,
-        dangerZone: false,
-        shaking: true,
-      };
-    });
+    const crash = useCallback((bet: number, crashAt: number) => {
+  stopAll();
+
+  setState((s) => {
+    const viewerChange = getViewerChange(crashAt, false);
+    const ratingChange = getRatingChange(crashAt, false);
+
+    const newViewers = Math.max(0, s.profile.viewers + viewerChange);
+    const newRating = Math.max(0, s.profile.rating + ratingChange);
+
+    let tasks = s.tasks.map((t) =>
+      t.id === "play10" && !t.completed
+        ? { ...t, current: t.current + 1, completed: t.current + 1 >= t.target }
+        : t
+    );
+
+    return {
+      ...s,
+      phase: "crashed",
+      profile: {
+        ...s.profile,
+        viewers: newViewers,
+        rating: newRating,
+        gamesPlayed: s.profile.gamesPlayed + 1,
+        rank: getRank(newRating),
+      },
+      currentMultiplier: crashAt,
+      tasks,
+      hypeMode: false,
+      dangerZone: false,
+      shaking: true,
+    };
+  });
+
+  setTimeout(() => setState((s) => ({ ...s, shaking: false })), 700);
+}, [stopAll]);
     setTimeout(() => setState((s) => ({ ...s, shaking: false })), 700);
   }, [stopAll]);
 
@@ -208,15 +214,14 @@ export function useGameState() {
         );
         return {
           ...s,
-          phase: "crashed",
-          profile: {
-            ...s.profile,
-            balance: newBalance,
-            viewers: newViewers,
-            rating: newRating,
-            gamesPlayed: newGames,
-            rank: getRank(newRating),
-          },
+      phase: "crashed",
+profile: {
+  ...s.profile,
+  viewers: newViewers,
+  rating: newRating,
+  gamesPlayed: newGames,
+  rank: getRank(newRating),
+},
           currentMultiplier: mult,
           tasks,
           hypeMode: false,
