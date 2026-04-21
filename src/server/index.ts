@@ -57,8 +57,8 @@ async function setupBot(): Promise<void> {
     return;
   }
 
-  const appUrl = `https://${domain}/`;
-  const webhookUrl = `https://${domain}/api/payments/webhook`;
+  const appUrl = `${domain}/`;
+const webhookUrl = `${domain}/api/payments/webhook`;
 
   try {
     const r = await tgPost("setWebhook", { url: webhookUrl });
