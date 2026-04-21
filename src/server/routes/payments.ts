@@ -93,51 +93,69 @@ router.post("/webhook", async (req, res) => {
     return;
   }
 
-  if (update.message?.successful_payment) {
-    const payload: string = update.message.successful_payment.invoice_payload;
-    const buyerId = String(update.message.from?.id ?? "");
+ if (update.message?.successful_payment) {
+  const payload: string = update.message.successful_payment.invoice_payload;
+  const buyerId = String(update.message.from?.id ?? "");
 
-    const { rows: purchases } = await pool.query( await pool.query(
-  `UPDATE users
-   SET balance = balance + $1
-   WHERE telegram_id = $2`,
-  [purchase.game_stars, buyerId]
-);
-      `SELECT * FROM purchases WHERE telegram_payload = $1 AND status = 'pending' LIMIT 1`,
-      [payload]
-    );
+  // 1. ищем покупку
+  const { rows: purchases } = await pool.query(
+    `SELECT * FROM purchases 
+     WHERE telegram_payload = $1 AND status = 'pending' 
+     LIMIT 1`,
+    [payload]
+  );
 
+  // 2. отмечаем покупку как выполненную
+  await pool.query(
+    `UPDATE purchases 
+     SET status = 'completed' 
+     WHERE telegram_payload = $1 AND status = 'pending'`,
+    [payload]
+  );
+
+  // 3. начисляем баланс + бонусы
+  if (purchases.length > 0 && buyerId) {
+    const purchase = purchases[0];
+
+    // 🔥 ОБНОВЛЕНИЕ БАЛАНСА ПОЛЬЗОВАТЕЛЯ
     await pool.query(
-      `UPDATE purchases SET status = 'completed' WHERE telegram_payload = $1 AND status = 'pending'`,
-      [payload]
+      `UPDATE users
+       SET balance = balance + $1
+       WHERE telegram_id = $2`,
+      [purchase.game_stars, buyerId]
     );
 
-    if (purchases.length > 0 && buyerId) {
-      const purchase = purchases[0];
-      const bonusStars = Math.floor(purchase.game_stars * 0.05);
-      if (bonusStars > 0) {
-        const { rows: refs } = await pool.query(
-          `SELECT * FROM referrals WHERE referred_id = $1 LIMIT 1`,
-          [buyerId]
+    // бонус рефералу
+    const bonusStars = Math.floor(purchase.game_stars * 0.05);
+
+    if (bonusStars > 0) {
+      const { rows: refs } = await pool.query(
+        `SELECT * FROM referrals WHERE referred_id = $1 LIMIT 1`,
+        [buyerId]
+      );
+
+      if (refs.length > 0) {
+        const ref = refs[0];
+
+        await pool.query(
+          `INSERT INTO purchases 
+           (telegram_user_id, pack_id, game_stars, tg_stars, telegram_payload, status, claimed)
+           VALUES ($1, 'referral_bonus', $2, 0, $3, 'completed', 0)`,
+          [ref.referrer_id, bonusStars, `ref:${ref.referrer_id}:${buyerId}:${Date.now()}`]
         );
-        if (refs.length > 0) {
-          const ref = refs[0];
-          await pool.query(
-            `INSERT INTO purchases (telegram_user_id, pack_id, game_stars, tg_stars, telegram_payload, status, claimed)
-             VALUES ($1, 'referral_bonus', $2, 0, $3, 'completed', 0)`,
-            [ref.referrer_id, bonusStars, `referral:${ref.referrer_id}:from:${buyerId}:${Date.now()}`]
-          );
-          await pool.query(
-            `UPDATE referrals SET total_bonus_earned = total_bonus_earned + $1 WHERE id = $2`,
-            [bonusStars, ref.id]
-          );
-        }
+
+        await pool.query(
+          `UPDATE referrals 
+           SET total_bonus_earned = total_bonus_earned + $1 
+           WHERE id = $2`,
+          [bonusStars, ref.id]
+        );
       }
     }
-
-    res.json({ ok: true });
-    return;
   }
+
+  return res.json({ ok: true });
+}
 
   const text: string = update.message?.text ?? "";
   const chatId: number = update.message?.chat?.id;
