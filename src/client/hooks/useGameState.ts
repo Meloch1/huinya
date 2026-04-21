@@ -196,7 +196,7 @@ export function useGameState() {
       if (isInstant && s.quickCollectStreak >= INSTANT_COLLECT_LIMIT) {
         didAbuseCrash = true;
         stopAll();
-        const newBalance = Math.max(0, s.profile.balance - s.currentBet);
+       
         const viewerChange = getViewerChange(mult, false);
         const newViewers = Math.max(0, s.profile.viewers + viewerChange);
         const newRating = Math.max(0, s.profile.rating - 5);
