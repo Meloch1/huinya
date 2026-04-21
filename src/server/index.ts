@@ -22,8 +22,15 @@ app.use("/api/referral", referralRouter);
 const staticDir = path.resolve(__dirname, "../public");
 if (existsSync(staticDir)) {
   app.use(express.static(staticDir));
- app.get("/", (_req, res) => {
-  res.send("SERVER WORKS");
+ app.get("/api/healthz", (_req, res) => {
+  res.json({ status: "ok" });
+});
+
+// 👇 ВСЕ РОУТЫ ВЫШЕ
+
+// 👇 В САМОМ КОНЦЕ
+app.get("*", (_req, res) => {
+  res.status(404).send("Not found");
 });
 
 const port = Number(process.env.PORT ?? 8080);
