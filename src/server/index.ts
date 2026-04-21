@@ -22,10 +22,9 @@ app.use("/api/referral", referralRouter);
 const staticDir = path.resolve(__dirname, "../public");
 if (existsSync(staticDir)) {
   app.use(express.static(staticDir));
-  app.get("*", (_req, res) => {
-    res.sendFile(path.join(staticDir, "index.html"));
-  });
-}
+ app.get("/", (_req, res) => {
+  res.send("SERVER WORKS");
+});
 
 const port = Number(process.env.PORT ?? 8080);
 
