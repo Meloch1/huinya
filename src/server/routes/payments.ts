@@ -191,13 +191,35 @@ router.get("/credits/:userId", async (req, res) => {
     [userId]
   );
   const total = rows.reduce((sum: number, r: any) => sum + r.game_stars, 0);
+
   if (rows.length > 0) {
     await pool.query(
-      `UPDATE purchases SET claimed = 1 WHERE telegram_user_id = $1 AND status = 'completed' AND claimed = 0`,
+      `UPDATE purchases 
+       SET claimed = 1 
+       WHERE telegram_user_id = $1 AND status = 'completed' AND claimed = 0`,
       [userId]
     );
   }
+
   res.json({ credits: total, count: rows.length });
 });
+
+
+// 🔥 ВСТАВЛЯЕШЬ ВОТ ЭТО
+router.get("/balance/:userId", async (req, res) => {
+  const { userId } = req.params;
+
+  const { rows } = await pool.query(
+    `SELECT balance FROM users WHERE telegram_id = $1`,
+    [userId]
+  );
+
+  if (rows.length === 0) {
+    return res.json({ balance: 0 });
+  }
+
+  res.json({ balance: rows[0].balance });
+});
+
 
 export default router;
